@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+    environment {
+        IMAGE_NAME = "python-sum"
+        DIR_PATH = "C:\Users\aliou\OneDrive\Bureau\Jenkins\app\Dockerfile"
+        CONTAINER_ID = "sha256:f4bfbca782c4ac0291e9fd559ecbf07debd080f4d35b3089bf6121e5742b9ef0"
+        TEST_FILE_PATH = "C:\Users\aliou\OneDrive\Bureau\Jenkins\Jenkins\test_variables.txt"
+    }
+    stages {
+        stage('Build') {
+            steps {
+                script {
+                    echo "🔨 Construction de l’image Docker..."
+                    bat "docker build -t ${IMAGE_NAME} ${DIR_PATH}"  // Remplacé "sh" par "bat"
+                    echo "✅ Image Docker ${IMAGE_NAME} construite avec succès !"
+                }
+            }
+        }
+        stage('Run') {
+            steps {
+                script {
+                    echo "🚀 Démarrage du conteneur..."
+                    def output = bat(script: "docker run -dit ${IMAGE_NAME}", returnStdout: true).trim()  // Remplacé "sh" par "bat"
+                    def lines = output.split('\n')
+                    env.CONTAINER_ID = lines[-1].trim()
+                    echo "✅ Conteneur en cours d’exécution avec ID : ${env.CONTAINER_ID}"
+                }
+            }
+        }
+        stage('Test') {
+            steps {
+                script {
+                    echo "🧪 Lancement des tests..."
+                    def testLines = readFile("${TEST_FILE_PATH}").split('\n')
+                    testLines.each { line ->
+                        def vars = line.split(' ')
+                        def arg1 = vars[0]
+                        def arg2 = vars[1]
+                        def expectedSum = vars[2].toFloat()
+                        def output = bat(script: "docker exec ${CONTAINER_ID} python /app/sum.py ${arg1} ${arg2}", returnStdout: true).trim()
+                        def result = output.toFloat()
+                        if (result == expectedSum) {
+                            echo "✅ Test réussi pour les nombres ${arg1} et ${arg2}. Résultat attendu : ${expectedSum}, obtenu : ${result}"
+                        } else {
+                            error "❌ Test échoué pour les nombres ${arg1} et ${arg2}. Résultat attendu : ${expectedSum}, obtenu : ${result}"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
