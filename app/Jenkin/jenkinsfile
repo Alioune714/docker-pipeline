@@ -2,9 +2,9 @@ pipeline {
     agent any
     environment {
         IMAGE_NAME = "python-sum"
-        DIR_PATH = "C:\Users\aliou\OneDrive\Bureau\Jenkins\app\Dockerfile"
+        DIR_PATH = DIR_PATH = "C:\\Users\\aliou\\OneDrive\\Bureau\\Jenkins\\app\\Dockerfile"
         CONTAINER_ID = "sha256:f4bfbca782c4ac0291e9fd559ecbf07debd080f4d35b3089bf6121e5742b9ef0"
-        TEST_FILE_PATH = "C:\Users\aliou\OneDrive\Bureau\Jenkins\Jenkins\test_variables.txt"
+        TEST_FILE_PATH = "C:\\Users\\aliou\\OneDrive\\Bureau\\\Jenkins\\app\\Jenkin\\test_variables.txt"
     }
     stages {
         stage('Build') {
@@ -47,6 +47,20 @@ pipeline {
                     }
                 }
             }
-        }
+        stage('Deploy') {
+            steps {
+                script {
+                    echo "🔐 Connexion à DockerHub..."
+                    sh 'echo ${DOCKER_HUB_PASSWORD} | docker login -u ${DOCKER_HUB_USERNAME} --password-stdin'
+
+                    echo "🏷️ Tagging de l’image..."
+                    sh 'docker tag ${python-sum}:${DOCKER_TAG} ${DOCKER_HUB_REPO}:${DOCKER_TAG}'
+
+                    echo "📤 Poussée de l’image vers DockerHub..."
+                    sh 'docker push ${DOCKER_HUB_REPO}:${DOCKER_TAG}'
+                }
+            }
+        }    
+    
     }
 }
